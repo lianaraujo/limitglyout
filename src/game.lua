@@ -10,7 +10,16 @@ local StateName = {
   [2] = 'Dead',
 }
 
-local function init(std, game)
+local make_rect = function(x, y, w, h)
+  return {
+    pos_x = x,
+    pos_y = y,
+    width = w,
+    height = h
+  }
+end
+
+local init_bar = function(game)
   game.bar_width = game.width / 15
   game.bar_height = game.height / 80
   game.bar_pos_y = game.height - (game.height / 10)
@@ -23,7 +32,9 @@ local function init(std, game)
     height = game.bar_height,
     speed = game.bar_speed
   }
+end
 
+local init_ball = function(game)
   game.ball_size = game.height / 80
   game.ball_pos_x = game.bar_pos_x + game.bar_width / 2 - game.ball_size / 2
   game.ball_pos_y = game.bar_pos_y - game.bar_height - 1
@@ -39,11 +50,45 @@ local function init(std, game)
     y_velocity = game.ball_y_velocity,
     x_velocity = game.ball_x_velocity
   }
+end
 
+local init_targets = function(std, game)
+  game.targets = {}
+  local cols = 9
+  local rows = 10
+  local col_padding_x = 10
+  local row_padding_y = 10
+  local target_heigth = 10
+  local target_width = 100
+  local grid_width = cols * target_width + (cols - 1) * col_padding_x
+  local target_grid_x = game.width / 2 - grid_width / 2
+  local target_grid_y = 50
+
+  for col = 0, cols - 1 do
+    for row = 0, rows - 1 do
+      local pos_x = target_grid_x + (target_width + col_padding_x) * col
+      local pos_y = target_grid_y + (target_heigth + row_padding_y) * row
+      table.insert(game.targets, {
+        pos_x = pos_x,
+        pos_y = pos_y,
+        width = target_width,
+        height = target_heigth,
+        dead = false,
+        -- map colors
+        color = row
+      })
+    end
+  end
+end
+
+local function init(std, game)
   game.state = State.ATTACHED
   game.padding = game.height / 100
   game.grid_x = 80
   game.grid_y = 24
+  init_bar(game)
+  init_ball(game)
+  init_targets(std, game)
 end
 
 local function sides(rect)
@@ -62,14 +107,6 @@ local function overlaps(rect1, rect2)
   return not (s1.right < s2.left or s2.right < s1.left or s1.bottom < s2.top or s2.bottom < s1.top)
 end
 
-local make_rect = function(x, y, w, h)
-  return {
-    pos_x = x,
-    pos_y = y,
-    width = w,
-    height = h
-  }
-end
 
 local Collision = {
   NO = 0,
@@ -207,26 +244,46 @@ local function draw_ball(std, game)
   end
 end
 
-local function draw_message(std, game, message)
+local function draw_message(std, game, message, color)
   local box_width = 195
   local box_height = 40
   std.draw.color(std.color.black)
   std.draw.rect(0, game.width / 2 - 90, game.height / 2 - 10, box_width, box_height)
-  std.draw.color(std.color.red)
+  std.draw.color(color)
   std.text.put(game.grid_x / 2 - 3, game.grid_y / 2, message, 1)
+end
+
+
+local function draw_targets(std, game)
+  local row_colors = {
+    [0] = std.color.magenta,
+    [1] = std.color.maroon,
+    [2] = std.color.gold,
+    [3] = std.color.darkblue,
+    [4] = std.color.red,
+    [5] = std.color.darkgreen,
+    [6] = std.color.violet,
+    [7] = std.color.orange,
+    [8] = std.color.purple,
+    [9] = std.color.skyblue,
+  }
+  for _, target in pairs(game.targets) do
+    std.draw.color(row_colors[target.color])
+    std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
+  end
 end
 
 local function draw(std, game)
   std.draw.clear(std.color.black)
   draw_bar(std, game)
   draw_ball(std, game)
+  draw_targets(std, game)
 
   if game.state == State.DEAD then
-    draw_message(std, game, 'Press B to restart')
+    draw_message(std, game, 'Press B to restart', std.color.red)
   elseif game.state == State.ATTACHED then
-    draw_message(std, game, 'Press A to launch')
+    draw_message(std, game, 'Press A to launch', std.color.green)
   end
-
   std.draw.color(std.color.green)
   std.text.put(0, 0, StateName[game.state], 1)
   std.text.put(10, 0, game.ball.speed, 1)
