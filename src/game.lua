@@ -115,6 +115,7 @@ local Collision = {
   LEFT = 3,
   RIGHT = 4,
   BOTTOM = 5,
+  TARGET = 6,
 }
 
 
@@ -136,6 +137,25 @@ local CollisionEffect = {
   end,
 }
 
+local function target_collision(game, target_index)
+  local target = game.targets[target_index]
+  if target.dead then
+    return
+  end
+  target.dead = true
+end
+
+local handle_collision = function(std, game, collision_type)
+  if collision_type >= Collision.TARGET then
+    target_collision(game, collision_type - Collision.TARGET)
+  else
+    local func = CollisionEffect[collision_type]
+    if func then
+      func(std, game)
+    end
+  end
+end
+
 local function vertical_collision(game)
   local next_y = game.ball.pos_y + game.ball.y_velocity
   if next_y < 0 then
@@ -150,7 +170,12 @@ local function vertical_collision(game)
     game.ball.y_velocity = -1 * game.ball.y_velocity
     return Collision.BOTTOM
   end
-  -- TODO targets
+  for i, target in pairs(game.targets) do
+    if not target.dead and overlaps(make_rect(game.ball.pos_x, next_y, game.ball.width, game.ball.height), target) then
+      game.ball.y_velocity = -1 * game.ball.y_velocity
+      return Collision.TARGET + i
+    end
+  end
   game.ball.pos_y = next_y
   return Collision.NO
 end
@@ -169,23 +194,14 @@ local function horizontal_collision(game)
     game.ball.x_velocity = -1 * game.ball.x_velocity
     return Collision.BAR
   end
-  -- TODO targets
+  for i, target in pairs(game.targets) do
+    if not target.dead and overlaps(make_rect(next_x, game.ball.pos_y, game.ball.width, game.ball.height), target) then
+      game.ball.x_velocity = -1 * game.ball.x_velocity
+      return Collision.TARGET + i
+    end
+  end
   game.ball.pos_x = next_x
   return Collision.NO
-end
-
-
-
-local handle_collision = function(std, game)
-  local h_col = CollisionEffect[horizontal_collision(game)]
-  if h_col then
-    h_col(std, game)
-  end
-
-  local v_col = CollisionEffect[vertical_collision(game)]
-  if v_col then
-    v_col(std, game)
-  end
 end
 
 local function start(std, game)
@@ -212,7 +228,8 @@ local StateHandler = {
     end
   end,
   [State.PLAYING] = function(std, game)
-    handle_collision(std, game)
+    handle_collision(std, game, horizontal_collision(game))
+    handle_collision(std, game, vertical_collision(game))
   end,
   [State.DEAD] = function(std, game)
     if std.key.press.b then
@@ -268,8 +285,10 @@ local function draw_targets(std, game)
     [9] = std.color.skyblue,
   }
   for _, target in pairs(game.targets) do
-    std.draw.color(row_colors[target.color])
-    std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
+    if not target.dead then
+      std.draw.color(row_colors[target.color])
+      std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
+    end
   end
 end
 
