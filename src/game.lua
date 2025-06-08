@@ -54,8 +54,8 @@ end
 
 local init_targets = function(std, game)
   game.targets = {}
-  local cols = 9
-  local rows = 10
+  local cols = 11
+  local rows = 20
   local col_padding_x = 10
   local row_padding_y = 10
   local target_heigth = 10
@@ -142,6 +142,8 @@ local function target_collision(game, target_index)
   if target.dead then
     return
   end
+  game.ball.speed = game.ball.speed + 0.06
+  game.bar.speed = game.bar.speed + 0.01
   target.dead = true
 end
 
@@ -285,7 +287,7 @@ local function draw_targets(std, game)
   }
   for _, target in pairs(game.targets) do
     if target.dead then goto continue end
-    std.draw.color(row_colors[target.color])
+    std.draw.color(row_colors[target.color % 10])
     std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
     ::continue::
   end
