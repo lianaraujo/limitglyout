@@ -240,7 +240,6 @@ local StateHandler = {
   end
 }
 
--- TODO angle factor
 local function loop(std, game)
   game.bar.pos_x = std.math.clamp(game.bar.pos_x + (std.key.axis.x * game.bar.speed), game.padding,
     game.width - game.bar.width - game.padding)
@@ -285,10 +284,10 @@ local function draw_targets(std, game)
     [9] = std.color.skyblue,
   }
   for _, target in pairs(game.targets) do
-    if not target.dead then
-      std.draw.color(row_colors[target.color])
-      std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
-    end
+    if target.dead then goto continue end
+    std.draw.color(row_colors[target.color])
+    std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
+    ::continue::
   end
 end
 
