@@ -317,9 +317,9 @@ end
 
 local P = {
   meta = {
-    title = 'Glyout',
+    title = 'Limit Breakout',
     author = 'Lian',
-    description = 'Breakout in Gly',
+    description = 'Breakout in Gly engine',
     version = '1.0.0'
   },
   callbacks = {
