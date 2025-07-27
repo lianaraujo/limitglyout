@@ -1,13 +1,21 @@
+-- TODO score
+-- TODO score multiplier
+
+-- TODO powerups
+-- TODO multiball
+-- TODO bigger bar
+-- TODO bar axis down
+
+-- TODO penaltires
+-- TODO smaller bar
+-- TODO tough targets
+-- TODO move bar axis up
+
 local State = {
   ATTACHED = 0,
   PLAYING = 1,
   DEAD = 2,
-}
-
-local StateName = {
-  [0] = 'Attached',
-  [1] = 'Playing',
-  [2] = 'Dead',
+  WIN = 3,
 }
 
 local make_rect = function(x, y, w, h)
@@ -63,6 +71,8 @@ local init_targets = function(std, game)
   local grid_width = cols * target_width + (cols - 1) * col_padding_x
   local target_grid_x = game.width / 2 - grid_width / 2
   local target_grid_y = 50
+  game.target_grid_height = rows * target_heigth + (rows - 1) * row_padding_y
+  game.target_grid_y = target_grid_y
 
   for col = 0, cols - 1 do
     for row = 0, rows - 1 do
@@ -137,14 +147,35 @@ local CollisionEffect = {
   end,
 }
 
+local function all_dead(game)
+  for _, target in pairs(game.targets) do
+    if not target.dead then
+      return false
+    end
+  end
+  return true
+end
+
 local function target_collision(game, target_index)
   local target = game.targets[target_index]
   if target.dead then
     return
   end
-  game.ball.speed = game.ball.speed + 0.06
-  game.bar.speed = game.bar.speed + 0.01
+  local current_speed = math.sqrt(game.ball.x_velocity ^ 2 + game.ball.y_velocity ^ 2)
+
+  local speed_increase = current_speed * 0.04
+  local new_speed = current_speed + speed_increase
+
+  local scale_factor = new_speed / current_speed
+  game.ball.x_velocity = game.ball.x_velocity * scale_factor
+  game.ball.y_velocity = game.ball.y_velocity * scale_factor
+
+  game.ball.speed = new_speed
+  game.bar.speed = game.bar.speed + 0.02
   target.dead = true
+  if all_dead(game) then
+    game.state = State.WIN
+  end
 end
 
 local handle_collision = function(std, game, collision_type)
@@ -224,7 +255,8 @@ end
 
 local StateHandler = {
   [State.ATTACHED] = function(std, game)
-    game.ball.pos_x = game.bar.pos_x + game.bar.width / 2 - game.ball.width / 2
+    game.ball.pos_x = game.bar.pos_x + game.bar.width / 2 - game.ball.width / 2 + game.ball.width / 2
+    game.ball.pos_y = game.bar.pos_y - game.bar.height - 1
     if std.key.press.a then
       start(std, game)
     end
@@ -235,17 +267,24 @@ local StateHandler = {
   end,
   [State.DEAD] = function(std, game)
     if std.key.press.b then
-      game.state = State.ATTACHED
-      game.ball.pos_x = game.bar_pos_x + game.bar_width / 2 - game.ball_size / 2
-      game.ball.pos_y = game.bar_pos_y - game.bar_height - 1
+      init(std, game)
+    end
+  end,
+  [State.WIN] = function(std, game)
+    if std.key.press.b then
+      init(std, game)
     end
   end
 }
 
-local function loop(std, game)
+local function handle_input(std, game)
   game.bar.pos_x = std.math.clamp(game.bar.pos_x + (std.key.axis.x * game.bar.speed), game.padding,
     game.width - game.bar.width - game.padding)
+end
 
+
+local function loop(std, game)
+  handle_input(std, game)
   StateHandler[game.state](std, game)
 end
 
@@ -303,13 +342,9 @@ local function draw(std, game)
     draw_message(std, game, 'Press B to restart', std.color.red)
   elseif game.state == State.ATTACHED then
     draw_message(std, game, 'Press A to launch', std.color.green)
+  elseif game.state == State.WIN then
+    draw_message(std, game, 'You win!', std.color.green)
   end
-  std.draw.color(std.color.green)
-  std.text.put(0, 0, StateName[game.state], 1)
-  std.text.put(10, 0, game.ball.speed, 1)
-  std.text.put(20, 0, game.ball.x_velocity, 1)
-  std.text.put(40, 0, game.ball.y_velocity, 1)
-  std.text.put(50, 0, game.ball.pos_y, 1)
 end
 
 local function exit(std, game)
