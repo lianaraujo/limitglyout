@@ -352,7 +352,7 @@ end
 
 local P = {
   meta = {
-    title = 'Limit Breakout',
+    title = 'Limit Glyout',
     author = 'Lian',
     description = 'Breakout in Gly engine',
     version = '1.0.0'
