@@ -163,7 +163,7 @@ local function target_collision(game, target_index)
   end
   local current_speed = math.sqrt(game.ball.x_velocity ^ 2 + game.ball.y_velocity ^ 2)
 
-  local speed_increase = current_speed * 0.04
+  local speed_increase = current_speed * 0.02
   local new_speed = current_speed + speed_increase
 
   local scale_factor = new_speed / current_speed
