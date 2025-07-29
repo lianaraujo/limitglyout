@@ -2,4 +2,4 @@
 
 Breakout clone
 
-![alt text](https://github.com/lianaraujo/limitglyout/sample.png "Glyout")
+![alt text](https://github.com/lianaraujo/limitglyout/blob/main/sample.png?raw=true)
