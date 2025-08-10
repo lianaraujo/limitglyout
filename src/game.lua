@@ -28,11 +28,11 @@ local make_rect = function(x, y, w, h)
 end
 
 local init_bar = function(game)
-  game.bar_width = game.width / 15
-  game.bar_height = game.height / 80
+  game.bar_width = math.floor(game.width / 15)
+  game.bar_height = math.floor(game.height / 90)
   game.bar_pos_y = game.height - (game.height / 10)
   game.bar_pos_x = game.width / 2 - game.bar_width / 2
-  game.bar_speed = 4
+  game.bar_speed = 0.35
   game.bar = {
     pos_x = game.bar_pos_x,
     pos_y = game.bar_pos_y,
@@ -43,10 +43,10 @@ local init_bar = function(game)
 end
 
 local init_ball = function(game)
-  game.ball_size = game.height / 80
+  game.ball_size = math.floor(game.height / 90)
   game.ball_pos_x = game.bar_pos_x + game.bar_width / 2 - game.ball_size / 2
   game.ball_pos_y = game.bar_pos_y - game.bar_height - 1
-  game.ball_speed = game.ball_size / 7
+  game.ball_speed = game.ball_size / 35
   game.ball_y_velocity = 0
   game.ball_x_velocity = 0
   game.ball = {
@@ -64,10 +64,10 @@ local init_targets = function(std, game)
   game.targets = {}
   local cols = 11
   local rows = 20
-  local col_padding_x = 10
-  local row_padding_y = 10
-  local target_heigth = 10
-  local target_width = 100
+  local target_width = math.floor(game.width / 15)    -- 100
+  local target_heigth = math.floor(game.height / 120) -- 10
+  local col_padding_x = target_heigth
+  local row_padding_y = target_heigth
   local grid_width = cols * target_width + (cols - 1) * col_padding_x
   local target_grid_x = game.width / 2 - grid_width / 2
   local target_grid_y = 50
@@ -93,9 +93,11 @@ end
 
 local function init(std, game)
   game.state = State.ATTACHED
+
   game.padding = game.height / 100
   game.grid_x = 80
   game.grid_y = 24
+
   init_bar(game)
   init_ball(game)
   init_targets(std, game)
@@ -189,8 +191,8 @@ local handle_collision = function(std, game, collision_type)
   end
 end
 
-local function vertical_collision(game)
-  local next_y = game.ball.pos_y + game.ball.y_velocity
+local function vertical_collision(std, game)
+  local next_y = game.ball.pos_y + game.ball.y_velocity * std.delta
   if next_y < 0 then
     game.ball.y_velocity = -1 * game.ball.y_velocity
     return Collision.TOP
@@ -213,8 +215,8 @@ local function vertical_collision(game)
   return Collision.NO
 end
 
-local function horizontal_collision(game)
-  local next_x = game.ball.pos_x + game.ball.x_velocity
+local function horizontal_collision(std, game)
+  local next_x = game.ball.pos_x + game.ball.x_velocity * std.delta
   if next_x + game.ball.width < 0 then
     game.ball.x_velocity = -1 * game.ball.x_velocity
     return Collision.LEFT
@@ -262,8 +264,8 @@ local StateHandler = {
     end
   end,
   [State.PLAYING] = function(std, game)
-    handle_collision(std, game, horizontal_collision(game))
-    handle_collision(std, game, vertical_collision(game))
+    handle_collision(std, game, horizontal_collision(std, game))
+    handle_collision(std, game, vertical_collision(std, game))
   end,
   [State.DEAD] = function(std, game)
     if std.key.press.b then
@@ -278,7 +280,7 @@ local StateHandler = {
 }
 
 local function handle_input(std, game)
-  game.bar.pos_x = std.math.clamp(game.bar.pos_x + (std.key.axis.x * game.bar.speed), game.padding,
+  game.bar.pos_x = std.math.clamp(game.bar.pos_x + (std.key.axis.x * game.bar.speed * std.delta), game.padding,
     game.width - game.bar.width - game.padding)
 end
 
@@ -325,10 +327,10 @@ local function draw_targets(std, game)
     [9] = std.color.skyblue,
   }
   for _, target in pairs(game.targets) do
-    if target.dead then goto continue end
-    std.draw.color(row_colors[target.color % 10])
-    std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
-    ::continue::
+    if not target.dead then
+      std.draw.color(row_colors[target.color % 10])
+      std.draw.rect(0, target.pos_x, target.pos_y, target.width, target.height)
+    end
   end
 end
 
