@@ -1,9 +1,9 @@
 {
   "scripts": {
     "postinstall": "npm run build && echo 'declare const node: {}\nexport default node' > dist/game.d.ts",
-    "build": "gly-cli build src/game.lua --core html5"
+    "build": "gly-cli build-html src/game.lua"
   },
   "devDependencies": {
-    "@gamely/gly-cli": "^0.0.21"
+    "@gamely/gly-cli": "^0.2.5"
   }
 }
