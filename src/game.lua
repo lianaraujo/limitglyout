@@ -257,7 +257,7 @@ end
 
 local StateHandler = {
   [State.ATTACHED] = function(std, game)
-    game.ball.pos_x = game.bar.pos_x + game.bar.width / 2 - game.ball.width / 2 + game.ball.width / 2
+    game.ball.pos_x = game.bar.pos_x + game.bar.width / 2 - game.ball.width / 2
     game.ball.pos_y = game.bar.pos_y - game.bar.height - 1
     if std.key.press.a then
       start(std, game)
