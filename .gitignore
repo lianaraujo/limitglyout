@@ -3,3 +3,4 @@ Thumbs.db
 vendor
 dist
 cli.lua
+node_modules
