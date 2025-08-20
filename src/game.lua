@@ -60,7 +60,7 @@ local init_ball = function(game)
   }
 end
 
-local init_targets = function(std, game)
+local init_targets = function(game, std)
   game.targets = {}
   local cols = 11
   local rows = 20
@@ -91,7 +91,7 @@ local init_targets = function(std, game)
   end
 end
 
-local function init(std, game)
+local function init(game, std)
   game.state = State.ATTACHED
 
   game.padding = game.height / 100
@@ -100,7 +100,7 @@ local function init(std, game)
 
   init_bar(game)
   init_ball(game)
-  init_targets(std, game)
+  init_targets(game, std)
 end
 
 local function sides(rect)
@@ -132,12 +132,12 @@ local Collision = {
 
 
 local CollisionEffect = {
-  [Collision.BOTTOM] = function(_, game)
+  [Collision.BOTTOM] = function(game)
     game.state = State.DEAD
     game.ball.x_velocity = 0
     game.ball.y_velocity = 0
   end,
-  [Collision.BAR] = function(std, game)
+  [Collision.BAR] = function(game, std)
     local hit_position = (game.ball.pos_x + game.ball.width / 2 - game.bar.pos_x) / game.bar.width
     local angle_factor = math.max(-1, math.min(1, (hit_position - 0.5) * 2))
 
@@ -180,18 +180,18 @@ local function target_collision(game, target_index)
   end
 end
 
-local handle_collision = function(std, game, collision_type)
+local handle_collision = function(game, std, collision_type)
   if collision_type >= Collision.TARGET then
     target_collision(game, collision_type - Collision.TARGET)
   else
     local func = CollisionEffect[collision_type]
     if func then
-      func(std, game)
+      func(game, std)
     end
   end
 end
 
-local function vertical_collision(std, game)
+local function vertical_collision(game, std)
   local next_y = game.ball.pos_y + game.ball.y_velocity * std.delta
   if next_y < 0 then
     game.ball.y_velocity = -1 * game.ball.y_velocity
@@ -215,7 +215,7 @@ local function vertical_collision(std, game)
   return Collision.NO
 end
 
-local function horizontal_collision(std, game)
+local function horizontal_collision(game, std)
   local next_x = game.ball.pos_x + game.ball.x_velocity * std.delta
   if next_x + game.ball.width < 0 then
     game.ball.x_velocity = -1 * game.ball.x_velocity
@@ -239,7 +239,7 @@ local function horizontal_collision(std, game)
   return Collision.NO
 end
 
-local function start(std, game)
+local function start(game, std)
   game.state = State.PLAYING
   local launch_angle = 90
 
@@ -256,54 +256,54 @@ local function start(std, game)
 end
 
 local StateHandler = {
-  [State.ATTACHED] = function(std, game)
+  [State.ATTACHED] = function(game, std)
     game.ball.pos_x = game.bar.pos_x + game.bar.width / 2 - game.ball.width / 2
     game.ball.pos_y = game.bar.pos_y - game.bar.height - 1
     if std.key.press.a then
-      start(std, game)
+      start(game, std)
     end
   end,
-  [State.PLAYING] = function(std, game)
-    handle_collision(std, game, horizontal_collision(std, game))
-    handle_collision(std, game, vertical_collision(std, game))
+  [State.PLAYING] = function(game, std)
+    handle_collision(game, std, horizontal_collision(game, std))
+    handle_collision(game, std, vertical_collision(game, std))
   end,
-  [State.DEAD] = function(std, game)
-    if std.key.press.b then
-      init(std, game)
+  [State.DEAD] = function(game, std)
+    if std.key.press.a then
+      init(game, std)
     end
   end,
-  [State.WIN] = function(std, game)
-    if std.key.press.b then
-      init(std, game)
+  [State.WIN] = function(game, std)
+    if std.key.press.a then
+      init(game, std)
     end
   end
 }
 
-local function handle_input(std, game)
+local function handle_input(game, std)
   game.bar.pos_x = std.math.clamp(game.bar.pos_x + (std.key.axis.x * game.bar.speed * std.delta), game.padding,
     game.width - game.bar.width - game.padding)
 end
 
 
-local function loop(std, game)
-  handle_input(std, game)
-  StateHandler[game.state](std, game)
+local function loop(game, std)
+  handle_input(game, std)
+  StateHandler[game.state](game, std)
 end
 
 
-local function draw_bar(std, game)
+local function draw_bar(game, std)
   std.draw.color(std.color.white)
   std.draw.rect(0, game.bar.pos_x, game.bar.pos_y, game.bar.width, game.bar.height)
 end
 
-local function draw_ball(std, game)
+local function draw_ball(game, std)
   if game.state ~= State.DEAD then
     std.draw.color(std.color.red)
     std.draw.rect(0, game.ball.pos_x, game.ball.pos_y, game.ball.width, game.ball.height)
   end
 end
 
-local function draw_message(std, game, message, color)
+local function draw_message(game, std, message, color)
   local box_width = 195
   local box_height = 40
   std.draw.color(std.color.black)
@@ -313,7 +313,7 @@ local function draw_message(std, game, message, color)
 end
 
 
-local function draw_targets(std, game)
+local function draw_targets(game, std)
   local row_colors = {
     [0] = std.color.magenta,
     [1] = std.color.maroon,
@@ -334,22 +334,22 @@ local function draw_targets(std, game)
   end
 end
 
-local function draw(std, game)
+local function draw(game, std)
   std.draw.clear(std.color.black)
-  draw_bar(std, game)
-  draw_ball(std, game)
-  draw_targets(std, game)
+  draw_bar(game, std)
+  draw_ball(game, std)
+  draw_targets(game, std)
 
   if game.state == State.DEAD then
-    draw_message(std, game, 'Press B to restart', std.color.red)
+    draw_message(game, std, 'Press A to restart', std.color.red)
   elseif game.state == State.ATTACHED then
-    draw_message(std, game, 'Press A to launch', std.color.green)
+    draw_message(game, std, 'Press A to launch', std.color.green)
   elseif game.state == State.WIN then
-    draw_message(std, game, 'You win!', std.color.green)
+    draw_message(game, std, 'You win!', std.color.green)
   end
 end
 
-local function exit(std, game)
+local function exit(game, std)
 end
 
 local P = {
